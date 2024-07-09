@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        var markers = {};
+
+        function updateMap(objects) {
+            for (var id in markers) {
+                map.removeLayer(markers[id]);
+            }
+            markers = {};
+
+            objects.forEach(function(obj) {
+                var icon = L.icon({
+                    iconUrl: obj.icon,
+                    iconSize: [32, 32],
+                });
+
+                var marker = L.marker([obj.latitude, obj.longitude], { icon: icon });
+                marker.bindPopup(
+                    `<b>Type:</b> ${obj.type}<br>
+                     <b>Speed:</b> ${obj.speed} km/h<br>
+                     <b>Last Updated:</b> ${new Date(obj.last_updated * 1000).toLocaleString()}`
+                );
+                marker.addTo(map);
+                markers[obj.id] = marker;
+            });
+        }
+
+        function fetchObjects() {
+            fetch('http://localhost:5000/get_objects')
+                .then(response => response.json())
+                .then(data => updateMap(data));
+        }
+
+        setInterval(fetchObjects, 5000);
+    </script>
+</body>
+</html>
